@@ -304,9 +304,11 @@
         keys-clause (utils/comma-separated (map field-identifier ins-keys))
         ins-values (insert-values-clause ins-keys (:values query))
         values-clause (utils/comma-separated ins-values)
+        modifiers-clause (when (seq (:modifiers query))
+                           (str (reduce str (:modifiers query)) " "))
         neue-sql (if-not (empty? ins-keys)
-                   (str "INSERT INTO " (table-str query) " " (utils/wrap keys-clause) " VALUES " values-clause)
-                   noop-query)]
+                   (str "INSERT " modifiers-clause "INTO " (table-str query) " " (utils/wrap keys-clause) " VALUES " values-clause)
+                   noop-query)]        
     (assoc query :sql-str neue-sql)))
 
 ;;*****************************************************
