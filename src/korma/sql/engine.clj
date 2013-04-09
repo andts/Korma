@@ -213,7 +213,7 @@
                        [pred-= v])
         pred? (predicates func)
         func (if pred?
-               (resolve pred?) 
+               (resolve pred?)
                func)]
     (func k value)))
 
@@ -277,24 +277,29 @@
   (for [v vs]
     (wrap-values (map #(get v %) ks))))
 
+(defn- extract-modifiers [query]
+  (when (seq (:modifiers query))
+    (str (reduce str (:modifiers query)) " ")))
+
 ;;*****************************************************
 ;; Query types
 ;;*****************************************************
 
 (defn sql-select [query]
   (let [clauses (map field-str (:fields query))
-        modifiers-clause (when (seq (:modifiers query))
-                           (str (reduce str (:modifiers query)) " "))
+        modifiers (extract-modifiers query)
         clauses-str (utils/comma-separated clauses)
-        neue-sql (str "SELECT " modifiers-clause clauses-str)]
+        neue-sql (str "SELECT " modifiers clauses-str)]
     (assoc query :sql-str neue-sql)))
 
 (defn sql-update [query]
-  (let [neue-sql (str "UPDATE " (table-str query))]
+  (let [modifiers (extract-modifiers query)
+         neue-sql (str "UPDATE " modifiers (table-str query))]
     (assoc query :sql-str neue-sql)))
 
 (defn sql-delete [query]
-  (let [neue-sql (str "DELETE FROM " (table-str query))]
+  (let [modifiers (extract-modifiers query)
+         neue-sql (str "DELETE " modifiers "FROM " (table-str query))]
     (assoc query :sql-str neue-sql)))
 
 (def noop-query "DO 0")
@@ -304,8 +309,9 @@
         keys-clause (utils/comma-separated (map field-identifier ins-keys))
         ins-values (insert-values-clause ins-keys (:values query))
         values-clause (utils/comma-separated ins-values)
+        modifiers (extract-modifiers query)
         neue-sql (if-not (empty? ins-keys)
-                   (str "INSERT INTO " (table-str query) " " (utils/wrap keys-clause) " VALUES " values-clause)
+                   (str "INSERT " modifiers "INTO " (table-str query) " " (utils/wrap keys-clause) " VALUES " values-clause)
                    noop-query)]
     (assoc query :sql-str neue-sql)))
 
@@ -396,7 +402,7 @@
      :union (-> query sql-union sql-order)
      :union-all (-> query sql-union-all sql-order)
      :intersect (-> query sql-intersect sql-order)
-     :select (-> query 
+     :select (-> query
                  sql-select
                  sql-joins
                  sql-where
@@ -404,12 +410,12 @@
                  sql-having
                  sql-order
                  sql-limit-offset)
-     :update (-> query 
+     :update (-> query
                  sql-update
                  sql-set
                  sql-where)
-     :delete (-> query 
+     :delete (-> query
                  sql-delete
                  sql-where)
-     :insert (-> query 
+     :insert (-> query
                  sql-insert))))
