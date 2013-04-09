@@ -265,7 +265,7 @@
                      (with email
                        (where (like :email "%@gmail.com")))))))))
 
-(deftest modifiers
+(deftest select-modifiers
   (sql-only
    (are [result query] (= result query)
         "SELECT DISTINCT \"users\".\"name\" FROM \"users\""
@@ -275,6 +275,35 @@
             as-sql)
         "SELECT TOP 5 \"users\".* FROM \"users\""
         (select user2 (modifier "TOP 5")))))
+
+(deftest insert-modifier
+  (sql-only
+    (is (= "INSERT IGNORE INTO \"users\" (\"last\", \"first\") VALUES (?, ?)"
+          (-> (insert* "users")
+            (modifier "IGNORE")
+            (values {:first "chris" :last "granger"})
+            as-sql)
+          ))))
+
+(deftest update-modifier
+  (sql-only
+    (is (= "UPDATE IGNORE INTO \"users\" (\"last\", \"first\") VALUES (?, ?)"
+          (-> (update* "users")
+            (set-fields {:last "granger"})
+            (modifier "LOW_PRIORITY")
+            (where {:first "chris"})
+            as-sql)
+          ))))
+
+(deftest delete-modifier
+  (sql-only
+    (is (= "INSERT IGNORE INTO \"users\" (\"last\", \"first\") VALUES (?, ?)"
+          (-> (update* "users")
+            (set-fields {:last "granger"})
+            (modifier "LOW_PRIORITY")
+            (where {:first "chris"})
+            as-sql)
+          ))))
 
 (deftest delimiters
   (set-delimiters "`")
